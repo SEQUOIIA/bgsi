@@ -7,8 +7,12 @@ mod handler;
 #[macro_use]
 extern crate actix_web;
 
+use crate::config::Config;
+
 fn main() {
     setup();
+    let conf = Config::load();
+    println!("{:?}", conf.data);
     println!("Hello, world!");
 }
 

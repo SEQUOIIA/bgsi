@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
 pub struct Rule {
     pub name : String,
     supplier : String,
@@ -10,6 +12,7 @@ pub struct Rule {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
 pub enum Action {
     Allow,
     Deny

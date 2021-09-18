@@ -10,7 +10,7 @@ use http::HeaderValue;
 
 #[actix_web::main]
 pub async fn serve() {
-    let conf = Config::load().unwrap();
+    let conf = Config::load();
     let listening_address = format!("{}:{}", conf.address, conf.port);
 
     HttpServer::new(move || App::new()
