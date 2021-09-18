@@ -2,6 +2,7 @@ mod config;
 mod model;
 mod server;
 mod api_controller;
+mod handler;
 
 #[macro_use]
 extern crate actix_web;
