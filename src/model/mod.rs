@@ -9,6 +9,8 @@ pub enum STError {
     Unknown(Box<dyn Error + Send>),
     NoSuchProvider,
     NoHandler,
+    SupplierNotFound,
+    ReceiverNotFound,
     HandlerNoResponse,
     HandlerErr(String),
 

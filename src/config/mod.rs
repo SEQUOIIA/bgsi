@@ -6,11 +6,12 @@ use serde::de::DeserializeOwned;
 use crate::config::rule::Rule;
 use crate::config::supplier::Supplier;
 use crate::config::receiver::Receiver;
+use crate::model::STError::{SupplierNotFound, ReceiverNotFound};
 
-mod receiver;
-mod rule;
-mod supplier;
-mod provider;
+pub mod receiver;
+pub mod rule;
+pub mod supplier;
+pub mod provider;
 
 const ENV_PREFIX : &str = "BGSI_";
 
@@ -97,6 +98,24 @@ impl Data {
             receivers,
             suppliers
         }
+    }
+
+    pub fn get_supplier_by_secret(&self, secret : &str) -> STResult<Supplier> {
+        for (_, supplier) in &self.suppliers {
+            if supplier.secret.eq(secret) {
+                return Ok(supplier.clone())
+            }
+        }
+        return Err(SupplierNotFound)
+    }
+
+    pub fn get_receiver_by_name(&self, name : &str) -> STResult<Receiver> {
+        for (_, receiver) in &self.receivers {
+            if receiver.name.eq(name) {
+                return Ok(receiver.clone())
+            }
+        }
+        return Err(ReceiverNotFound)
     }
 }
 

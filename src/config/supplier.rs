@@ -5,5 +5,5 @@ use serde::{Deserialize, Serialize};
 pub struct Supplier {
     pub name : String,
     pub secret : String,
-    receivers : Vec<String>
+    pub receivers : Vec<String>
 }
