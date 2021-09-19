@@ -37,19 +37,19 @@ impl Default for Config {
 
 impl Config {
     pub fn load() -> Self {
-        load_conf_from_yaml("config.yml").unwrap_or_default()
+        load_conf_from_yaml_path("config.yml").unwrap_or_default()
     }
 
     pub fn load_rules() -> STResult<Vec<Rule>> {
-        load_conf_from_yaml("rules.yml")
+        load_conf_from_yaml_path("rules.yml")
     }
 
     pub fn load_receivers() -> STResult<Vec<Receiver>> {
-        load_conf_from_yaml("receivers.yml")
+        load_conf_from_yaml_path("receivers.yml")
     }
 
     pub fn load_suppliers() -> STResult<Vec<Supplier>> {
-        load_conf_from_yaml("suppliers.yml")
+        load_conf_from_yaml_path("suppliers.yml")
     }
 
     fn load_envs(&mut self) {
@@ -78,17 +78,17 @@ pub struct Data {
 
 impl Data {
     pub fn new() -> Self {
-        let rules = load_conf_from_yaml::<Vec<Rule>>("rules.yml").unwrap().into_iter()
+        let rules = load_conf_from_yaml_path::<Vec<Rule>>("rules.yml").unwrap().into_iter()
             .map(|item| {
                 (item.name.clone(), item)
             }).collect();
 
-        let receivers = load_conf_from_yaml::<Vec<Receiver>>("receivers.yml").unwrap().into_iter()
+        let receivers = load_conf_from_yaml_path::<Vec<Receiver>>("receivers.yml").unwrap().into_iter()
             .map(|item| {
                 (item.name.clone(), item)
             }).collect();
 
-        let suppliers = load_conf_from_yaml::<Vec<Supplier>>("suppliers.yml").unwrap().into_iter()
+        let suppliers = load_conf_from_yaml_path::<Vec<Supplier>>("suppliers.yml").unwrap().into_iter()
             .map(|item| {
                 (item.name.clone(), item)
             }).collect();
@@ -99,6 +99,30 @@ impl Data {
             suppliers
         }
     }
+
+    pub fn new_from_bytes(rules : &[u8], receivers : &[u8], suppliers : &[u8]) -> Self {
+        let rules = load_conf_from_yaml::<Vec<Rule>>(rules).unwrap().into_iter()
+            .map(|item| {
+                (item.name.clone(), item)
+            }).collect();
+
+        let receivers = load_conf_from_yaml::<Vec<Receiver>>(receivers).unwrap().into_iter()
+            .map(|item| {
+                (item.name.clone(), item)
+            }).collect();
+
+        let suppliers = load_conf_from_yaml::<Vec<Supplier>>(suppliers).unwrap().into_iter()
+            .map(|item| {
+                (item.name.clone(), item)
+            }).collect();
+
+        Self {
+            rules,
+            receivers,
+            suppliers
+        }
+    }
+
 
     pub fn get_supplier_by_secret(&self, secret : &str) -> STResult<Supplier> {
         for (_, supplier) in &self.suppliers {
@@ -119,12 +143,17 @@ impl Data {
     }
 }
 
-fn load_conf_from_yaml<T>(path : &str) -> STResult<T> where T : DeserializeOwned {
+fn load_conf_from_yaml_path<T>(path : &str) -> STResult<T> where T : DeserializeOwned {
     let mut input_file = std::fs::File::open(path)?;
     let mut buf = Vec::new();
     input_file.read_to_end(&mut buf)?;
     Ok(serde_yaml::from_slice::<T>(&buf)?)
 }
+
+fn load_conf_from_yaml<T>(data : &[u8]) -> STResult<T> where T : DeserializeOwned {
+    Ok(serde_yaml::from_slice::<T>(data)?)
+}
+
 
 fn default_port() -> String {
     "8080".to_owned()

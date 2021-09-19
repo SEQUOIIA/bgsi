@@ -4,6 +4,9 @@ mod server;
 mod api_controller;
 mod handler;
 
+#[cfg(test)]
+mod test;
+
 #[macro_use]
 extern crate actix_web;
 
