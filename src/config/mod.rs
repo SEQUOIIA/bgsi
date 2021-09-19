@@ -133,6 +133,16 @@ impl Data {
         return Err(SupplierNotFound)
     }
 
+    pub fn get_rules_by_supplier_name(&self, s_name : &str) -> STResult<Vec<Rule>> {
+        Ok(self.rules.iter()
+            .filter(|(name, rule)| {
+                rule.supplier.eq(s_name)
+            })
+            .map(|(name, rule)| {
+                rule.clone()
+            }).collect())
+    }
+
     pub fn get_receiver_by_name(&self, name : &str) -> STResult<Receiver> {
         for (_, receiver) in &self.receivers {
             if receiver.name.eq(name) {

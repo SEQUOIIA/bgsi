@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 #[serde(rename_all = "snake_case")]
 pub struct Rule {
     pub name : String,
-    supplier : String,
+    pub supplier : String,
     pub action : Action,
     accounts : Vec<String>,
     repos: Vec<String>
