@@ -3,6 +3,8 @@ use crate::model::STResult;
 use crate::config::Data;
 use std::sync::Arc;
 use crate::config::receiver::Provider;
+use std::collections::HashMap;
+use crate::config::rule::Action;
 
 #[cfg(test)]
 mod tests {
@@ -31,6 +33,10 @@ impl GitHubWebhook {
 pub fn handle(secret : String, data : Arc<Data>) -> STResult<()> {
     let supplier = data.get_supplier_by_secret(&secret)?;
     let rules = data.get_rules_by_supplier_name(&supplier.name)?;
+
+    // Rule engine (of sorts)
+    let accounts : HashMap<String, Action> = HashMap::new();
+    let repositories : HashMap<String, Action> = HashMap::new();
 
     for receiver_name in supplier.receivers {
         let receiver = data.get_receiver_by_name(&receiver_name)?;
