@@ -165,7 +165,7 @@ pub const GITHUB_PUSH_WEBHOOK_PAYLOAD : &str = r#"
 }
 "#;
 
-pub const GITHUB_PUSH_WEBHOOK_PAYLOAD_2 : &str = r#"
+pub const GITHUB_PUSH_WEBHOOK_PAYLOAD_1_NEW_COMMIT : &str = r#"
 {
   "ref": "refs/heads/upstream",
   "before": "1",
