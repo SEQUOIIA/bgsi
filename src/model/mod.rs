@@ -14,7 +14,9 @@ pub enum STError {
     SupplierNotFound,
     ReceiverNotFound,
     HandlerNoResponse,
+    GitRefNotFound,
     HandlerErr(String),
+    Error(String),
 
     // Other libraries
     IoError(std::io::Error),
@@ -37,5 +39,11 @@ impl From<serde_json::Error> for STError {
 impl From<serde_yaml::Error> for STError {
     fn from(e: serde_yaml::Error) -> Self {
         STError::YamlError(e)
+    }
+}
+
+impl From<&str> for STError {
+    fn from(e: &str) -> Self {
+        STError::Error(e.to_owned())
     }
 }

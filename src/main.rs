@@ -11,12 +11,14 @@ mod test;
 extern crate actix_web;
 
 use crate::config::Config;
+use crate::server::serve;
 
 fn main() {
     setup();
     let conf = Config::load();
     println!("{:?}", conf.data);
-    println!("Hello, world!");
+
+    serve();
 }
 
 

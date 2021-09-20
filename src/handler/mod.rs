@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::config::receiver::Provider;
 use std::collections::HashMap;
 use crate::config::rule::{Action, Repo};
-use crate::model::github_push::GitHubPushPayload;
+use crate::model::github_push::{GitHubPushPayload, GitRef};
 
 #[cfg(test)]
 mod tests {
@@ -59,6 +59,8 @@ pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> S
     }
 
     let push_resp = load_github_push_payload(webhook_payload)?;
+    let msg = create_message_from_gpp(&push_resp)?;
+    println!("{}", msg);
 
     println!("{:?}", accounts);
     println!("{:?}", repositories);
@@ -79,6 +81,33 @@ fn load_github_push_payload(payload : Vec<u8>) -> STResult<GitHubPushPayload> {
         Ok(val) => Ok(val),
         Err(err) => Err(STError::JsonError(err))
     }
+}
+
+fn create_message_from_gpp(gpp : &GitHubPushPayload) -> STResult<String> {
+    let push_type = GitRef::from_str(&gpp.ref_field)?;
+    let mut msg = String::new();
+    let mut action = "new".to_owned();
+    {
+        if gpp.created {
+            action = "new".to_owned();
+        }
+        if gpp.deleted {
+            action = "removed".to_owned();
+        }
+    }
+
+    match push_type {
+        GitRef::Branch => {
+            let multiple_commits_msg = if gpp.commits.len() > 1 { "s" } else { "" };
+            msg = format!("[{}] {} {} commit{}", gpp.repository.full_name,  gpp.commits.len(), action, multiple_commits_msg);
+        }
+        GitRef::Tag => {
+            let multiple_tags_msg = if gpp.commits.len() > 1 { "s" } else { "" };
+            msg = format!("[{}] {} {} tag{}", gpp.repository.full_name, gpp.commits.len(), action, multiple_tags_msg);
+        }
+    }
+
+    Ok(msg)
 }
 
 fn handle_slack() {

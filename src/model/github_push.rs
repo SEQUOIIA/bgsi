@@ -1,4 +1,31 @@
 use serde::{Deserialize, Serialize};
+use crate::model::STResult;
+use crate::model::github_push::GitRef::{Branch, Tag};
+
+pub enum GitRef {
+    Branch,
+    Tag
+}
+
+impl GitRef {
+    pub fn from_string(val : String) -> STResult<Self> {
+        Self::from_str(&val)
+    }
+
+    pub fn from_str(val : &str) -> STResult<Self> {
+        let split : Vec<&str> = val.split('/').collect();
+        if split.len() > 2 {
+            if split[1].eq("heads") {
+                return Ok(Branch);
+            }
+            if split[1].eq("tags") {
+                return Ok(Tag);
+            }
+        }
+
+        Err("GitRef was not a branch nor tag.".into())
+    }
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GitHubPushPayload {
@@ -100,7 +127,7 @@ pub struct Repository {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Owner {
     pub name: String,
-    pub email: String,
+    pub email: Option<String>,
     pub login: String,
     pub id: i64,
     pub node_id: String,
