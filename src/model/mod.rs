@@ -4,6 +4,8 @@ use std::error::Error;
 pub type STResult<T> = Result<T, STError>;
 pub type SendSync<T> = Arc<crossbeam::sync::ShardedLock<T>>;
 
+pub mod github_push;
+
 #[derive(Debug)]
 pub enum STError {
     Unknown(Box<dyn Error + Send>),
