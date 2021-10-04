@@ -14,5 +14,6 @@ pub struct Receiver {
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum Provider {
     Slack(SlackData),
-    CustomWebhook
+    CustomWebhook,
+    Testing
 }

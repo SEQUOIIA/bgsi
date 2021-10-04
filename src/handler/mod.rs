@@ -31,9 +31,16 @@ impl GitHubWebhook {
     }
 }
 
-pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> STResult<()> {
+#[derive(Clone, Default, Debug)]
+pub struct HandleResult {
+    pub msg : String,
+    pub accounts : HashMap<String, Action>,
+    pub repositories : HashMap<String, Repo>
+}
+
+pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> STResult<HandleResult> {
     let supplier = data.get_supplier_by_secret(&secret)?;
-    let rules = data.get_rules_by_supplier_name(&supplier.name)?;
+    let mut rules = data.get_rules_by_supplier_name(&supplier.name)?;
 
     // Rule engine (of sorts)
     let mut accounts : HashMap<String, Action> = HashMap::new();
@@ -60,20 +67,27 @@ pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> S
 
     let push_resp = load_github_push_payload(webhook_payload)?;
     let msg = create_message_from_gpp(&push_resp)?;
-    println!("{}", msg);
-
-    println!("{:?}", accounts);
-    println!("{:?}", repositories);
 
     for receiver_name in supplier.receivers {
         let receiver = data.get_receiver_by_name(&receiver_name)?;
         match receiver.provider {
             Provider::Slack(_) => {}
             Provider::CustomWebhook => {}
+            Provider::Testing => {
+                println!("{}", &receiver_name);
+                println!("{}", msg);
+
+                println!("{:?}", accounts);
+                println!("{:?}", repositories);
+            }
         }
     }
 
-    Ok(())
+    Ok(HandleResult {
+        msg,
+        accounts,
+        repositories
+    })
 }
 
 fn load_github_push_payload(payload : Vec<u8>) -> STResult<GitHubPushPayload> {
@@ -97,13 +111,23 @@ fn create_message_from_gpp(gpp : &GitHubPushPayload) -> STResult<String> {
     }
 
     match push_type {
-        GitRef::Branch => {
-            let multiple_commits_msg = if gpp.commits.len() > 1 { "s" } else { "" };
-            msg = format!("[{}] {} {} commit{}", gpp.repository.full_name,  gpp.commits.len(), action, multiple_commits_msg);
+        GitRef::Branch(branch) => {
+
+            if gpp.commits.len() == 0 {
+                if gpp.created {
+                    action = "created".to_owned();
+                }
+                msg = format!("[{}] branch '{}' {} by {}", gpp.repository.full_name, branch, action, gpp.sender.login);
+            } else {
+                let multiple_commits_msg = if gpp.commits.len() > 1 { "s" } else { "" };
+                if gpp.deleted {
+                    action = "deleted".to_owned();
+                }
+                msg = format!("[{}] {} {} commit{} pushed to {} by {}", gpp.repository.full_name,  gpp.commits.len(), action, multiple_commits_msg, branch, gpp.sender.login);
+            }
         }
-        GitRef::Tag => {
-            let multiple_tags_msg = if gpp.commits.len() > 1 { "s" } else { "" };
-            msg = format!("[{}] {} {} tag{}", gpp.repository.full_name, gpp.commits.len(), action, multiple_tags_msg);
+        GitRef::Tag(tag) => {
+            msg = format!("[{}] Tag '{}' {} by {}", gpp.repository.full_name, tag, action, gpp.sender.login);
         }
     }
 

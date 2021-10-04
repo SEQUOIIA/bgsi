@@ -134,13 +134,16 @@ impl Data {
     }
 
     pub fn get_rules_by_supplier_name(&self, s_name : &str) -> STResult<Vec<Rule>> {
-        Ok(self.rules.iter()
+        let mut rules : Vec<Rule> = self.rules.iter()
             .filter(|(name, rule)| {
                 rule.supplier.eq(s_name)
             })
             .map(|(name, rule)| {
                 rule.clone()
-            }).collect())
+            }).collect();
+        rules.sort();
+
+        Ok(rules)
     }
 
     pub fn get_receiver_by_name(&self, name : &str) -> STResult<Receiver> {

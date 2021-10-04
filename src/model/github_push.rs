@@ -3,8 +3,8 @@ use crate::model::STResult;
 use crate::model::github_push::GitRef::{Branch, Tag};
 
 pub enum GitRef {
-    Branch,
-    Tag
+    Branch(String),
+    Tag(String)
 }
 
 impl GitRef {
@@ -16,10 +16,10 @@ impl GitRef {
         let split : Vec<&str> = val.split('/').collect();
         if split.len() > 2 {
             if split[1].eq("heads") {
-                return Ok(Branch);
+                return Ok(Branch(split[2].to_owned()));
             }
             if split[1].eq("tags") {
-                return Ok(Tag);
+                return Ok(Tag(split[2].to_owned()));
             }
         }
 
