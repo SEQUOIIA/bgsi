@@ -14,6 +14,7 @@ pub mod supplier;
 pub mod provider;
 
 const ENV_PREFIX : &str = "BGSI_";
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
