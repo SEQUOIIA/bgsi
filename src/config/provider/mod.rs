@@ -19,9 +19,7 @@ pub struct SlackRequestBody {
 }
 
 impl SlackReceiver {
-    pub fn handle(msg : String, gpp : &GitHubPushPayload) {
-
-
+    pub fn handle(&self, gpp : &GitHubPushPayload) {
         let req = slack::SlackRequestBody {
             blocks: vec![slack::Block {
                 type_field: "section".to_owned(),

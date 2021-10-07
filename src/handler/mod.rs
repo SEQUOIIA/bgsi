@@ -6,6 +6,8 @@ use crate::config::receiver::Provider;
 use std::collections::HashMap;
 use crate::config::rule::{Action, Repo};
 use crate::model::github_push::{GitHubPushPayload, GitRef};
+use crate::config::rule::Action::{Deny, Allow};
+use crate::config::provider::SlackReceiver;
 
 #[cfg(test)]
 mod tests {
@@ -39,10 +41,11 @@ pub struct HandleResult {
 }
 
 pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> STResult<HandleResult> {
+    let push_resp = load_github_push_payload(webhook_payload)?;
     let supplier = data.get_supplier_by_secret(&secret)?;
     let mut rules = data.get_rules_by_supplier_name(&supplier.name)?;
 
-    // Rule engine (of sorts)
+    // Rule engine START (of sorts)
     let mut accounts : HashMap<String, Action> = HashMap::new();
     let mut repositories : HashMap<String, Repo> = HashMap::new();
 
@@ -65,13 +68,45 @@ pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> S
         }
     }
 
-    let push_resp = load_github_push_payload(webhook_payload)?;
+    let mut ruling = Deny;
+    match accounts.get(&push_resp.repository.owner.name) {
+        None => {}
+        Some(action) => {
+            match action {
+                Action::Allow => { ruling = Allow }
+                Action::Deny => { ruling = Deny }
+            }
+        }
+    };
+
+    match repositories.get(&push_resp.repository.full_name) {
+        None => {}
+        Some(repo) => {
+            match repo.action {
+                Action::Allow => { ruling = Allow }
+                Action::Deny => { ruling = Deny }
+            }
+        }
+    }
+
+    if let Action::Deny = ruling {
+        return Ok(HandleResult{
+            ..Default::default()
+        });
+    }
+    // Rule engine END
+
     let msg = create_message_from_gpp(&push_resp)?;
 
     for receiver_name in supplier.receivers {
         let receiver = data.get_receiver_by_name(&receiver_name)?;
         match receiver.provider {
-            Provider::Slack(_) => {}
+            Provider::Slack(data) => {
+                let slack = SlackReceiver {
+                    data
+                };
+                slack.handle(&push_resp);
+            }
             Provider::CustomWebhook => {}
             Provider::Testing => {
                 println!("{}", &receiver_name);
