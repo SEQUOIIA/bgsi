@@ -4,8 +4,10 @@ use crate::config::Data;
 use std::sync::Arc;
 use crate::config::receiver::Provider;
 use std::collections::HashMap;
+use log::debug;
 use crate::config::rule::{Action, Repo};
 use crate::model::github_push::{GitHubPushPayload, GitRef};
+use crate::model::STError::SupplierNotFound;
 
 #[cfg(test)]
 mod tests {
@@ -38,8 +40,11 @@ pub struct HandleResult {
     pub repositories : HashMap<String, Repo>
 }
 
-pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> STResult<HandleResult> {
-    let supplier = data.get_supplier_by_secret(&secret)?;
+pub fn handle(secret : Option<&String>, data : Arc<Data>, webhook_payload : Vec<u8>) -> STResult<HandleResult> {
+    if secret.is_none() {
+        return Err(SupplierNotFound);
+    }
+    let supplier = data.get_supplier_by_secret(&secret.unwrap())?;
     let mut rules = data.get_rules_by_supplier_name(&supplier.name)?;
 
     // Rule engine (of sorts)
@@ -68,17 +73,36 @@ pub fn handle(secret : String, data : Arc<Data>, webhook_payload : Vec<u8>) -> S
     let push_resp = load_github_push_payload(webhook_payload)?;
     let msg = create_message_from_gpp(&push_resp)?;
 
-    for receiver_name in supplier.receivers {
-        let receiver = data.get_receiver_by_name(&receiver_name)?;
-        match receiver.provider {
-            Provider::Slack(_) => {}
-            Provider::CustomWebhook => {}
-            Provider::Testing => {
-                println!("{}", &receiver_name);
-                println!("{}", msg);
+    let mut allowed = true;
+    if let Some(action) = accounts.get(&push_resp.repository.owner.name) {
+        match action {
+            Action::Allow => allowed = true,
+            Action::Deny => allowed = false
+        }
+    }
+    debug!("Rule check account: {}", allowed);
 
-                println!("{:?}", accounts);
-                println!("{:?}", repositories);
+    if let Some(repo) = repositories.get(&push_resp.repository.full_name) {
+        match repo.action {
+            Action::Allow => allowed = true,
+            Action::Deny => allowed = false
+        }
+    }
+    debug!("Rule check repo: {}", allowed);
+
+    if allowed {
+        for receiver_name in supplier.receivers {
+            let receiver = data.get_receiver_by_name(&receiver_name)?;
+            match receiver.provider {
+                Provider::Slack(_) => {}
+                Provider::CustomWebhook => {}
+                Provider::Testing => {
+                    println!("{}", &receiver_name);
+                    println!("{}", msg);
+
+                    println!("{:?}", accounts);
+                    println!("{:?}", repositories);
+                }
             }
         }
     }
@@ -112,7 +136,6 @@ fn create_message_from_gpp(gpp : &GitHubPushPayload) -> STResult<String> {
 
     match push_type {
         GitRef::Branch(branch) => {
-
             if gpp.commits.len() == 0 {
                 if gpp.created {
                     action = "created".to_owned();
